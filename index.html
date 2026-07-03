@@ -565,21 +565,35 @@ select.filter-input{cursor:pointer}
   transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
 }
 
-/* ====== INLINE DETAIL PANEL (replaces overlay) ====== */
+/* ====== RIGHT-SIDE DRAWER PANEL ====== */
 .j-inline-detail {
-  margin-top: 16px; background: var(--bg2); border: 1.5px solid var(--bg3); border-radius: 14px;
-  overflow: hidden; max-height: 0; opacity: 0;
-  transition: max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s, margin 0.4s;
+  position: fixed; top: 0; right: 0; width: 420px; height: 100vh; z-index: 900;
+  background: var(--bg2); border-left: 1.5px solid var(--bg3);
+  overflow-y: auto; overflow-x: hidden;
+  transform: translateX(100%); opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.3s;
+  box-shadow: none;
 }
 .j-inline-detail.j-open {
-  max-height: 4000px; opacity: 1;
-  box-shadow: 0 8px 40px rgba(30,27,75,0.12);
+  transform: translateX(0); opacity: 1;
+  box-shadow: -8px 0 40px rgba(30,27,75,0.18);
   border-color: var(--accent);
+}
+.j-drawer-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 899;
+  background: rgba(0,0,0,0.25); opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.j-drawer-overlay.j-visible {
+  opacity: 1; pointer-events: auto;
+}
+@media (max-width: 768px) {
+  .j-inline-detail { width: 92vw; }
 }
 
 .j-detail-header {
   padding: 20px 24px 16px; border-bottom: 1px solid var(--bg3);
-  position: sticky; top: 0; background: var(--bg2); border-radius: 16px 16px 0 0; z-index: 1;
+  position: sticky; top: 0; background: var(--bg2); border-radius: 0; z-index: 1;
 }
 .j-dh-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .j-dh-left { flex: 1; }
@@ -1121,10 +1135,11 @@ select.filter-input{cursor:pointer}
         <div class="j-progress-label">Full Onboarding Journey — <span id="jPhaseCount"></span> Phases · <span id="jTotalTasks"></span> Tasks</div>
         <div class="j-progress-bg"><div class="j-progress-fill" id="jProgressFill"></div></div>
       </div>
-      <!-- Inline detail panel (appears below grid when a phase is clicked) -->
-      <div class="j-inline-detail" id="jInlineDetail"><div class="j-detail-panel" id="jDetailPanel"></div></div>
     </div>
     <div class="j-tooltip" id="jTooltip"></div>
+    <!-- Drawer overlay + right-side detail panel -->
+    <div class="j-drawer-overlay" id="jDrawerOverlay" onclick="closeJourney()"></div>
+    <div class="j-inline-detail" id="jInlineDetail"><div class="j-detail-panel" id="jDetailPanel"></div></div>
 
     <!-- TAB 3: BPM / Process Flow -->
     <div class="tab-content" id="tab-bpm">
@@ -1914,9 +1929,11 @@ function openJourneyDetail(idx) {
 
   panel.innerHTML = html;
   inlineDetail.classList.add('j-open');
+  inlineDetail.scrollTop = 0;
 
-  // Smooth scroll to the detail panel
-  setTimeout(() => inlineDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  // Show drawer overlay
+  const overlay = document.getElementById('jDrawerOverlay');
+  if (overlay) overlay.classList.add('j-visible');
 
   // Tab switching within detail panel
   panel.querySelectorAll('.j-tab-btn').forEach(btn => {
@@ -1935,6 +1952,8 @@ function jMiniTag(team) { const cls = TEAM_CLASSES_J[team] || 'jr-client'; retur
 function navJourney(d) { const n = jCurrentIdx + d; if (n >= 0 && n < GANTT.phases.length) openJourneyDetail(n); }
 function closeJourney() {
   document.getElementById('jInlineDetail').classList.remove('j-open');
+  const overlay = document.getElementById('jDrawerOverlay');
+  if (overlay) overlay.classList.remove('j-visible');
   jCurrentIdx = -1;
   document.querySelectorAll('.j-phase-card').forEach(c => c.classList.remove('j-active'));
 }
